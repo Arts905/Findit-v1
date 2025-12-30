@@ -36,6 +36,23 @@ else:
 # Tabs
 tab1, tab2, tab3 = st.tabs(["Upload & Analyze", "Live Feed (Demo)", "Find My Stuff"])
 
+def get_image_bytes(url):
+    """
+    Fetch image from backend (Ngrok) with custom headers to bypass warning page.
+    """
+    try:
+        # Ngrok free tier adds a warning page for browsers.
+        # We must add this header to tell Ngrok it's a programmatic request.
+        headers = {"ngrok-skip-browser-warning": "true"}
+        res = requests.get(url, headers=headers, timeout=10)
+        if res.status_code == 200:
+            return res.content
+        else:
+            return None
+    except Exception as e:
+        st.error(f"Image load failed: {e}")
+        return None
+
 with tab1:
     st.header("📷 Upload Image")
     uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
@@ -81,7 +98,13 @@ with tab1:
                                 img_url = data['annotated_url']
                                 if img_url.startswith("/"):
                                     img_url = f"{backend_url}{img_url}"
-                                st.image(img_url, caption="AI Result", use_container_width=True)
+                                
+                                # Use proxy fetch to bypass ngrok warning
+                                img_bytes = get_image_bytes(img_url)
+                                if img_bytes:
+                                    st.image(img_bytes, caption="AI Result", use_container_width=True)
+                                else:
+                                    st.error("Could not load result image.")
                             else:
                                 st.warning("No annotated image returned.")
                     else:
@@ -125,9 +148,11 @@ with tab3:
                         if res.status_code == 200:
                             results = res.json()
                             if "items" in results and results["items"]:
-                                st.success(f"Found {len(results['items'])} items matching '{query}'")
+                                # Limit results to 20 to prevent overload
+                                items = results["items"][:20]
+                                st.success(f"Found {len(results['items'])} items matching '{query}' (Showing latest {len(items)})")
                                 
-                                for item in results["items"]:
+                                for item in items:
                                     with st.container():
                                         c1, c2 = st.columns([1, 2])
                                         with c1:
@@ -135,7 +160,13 @@ with tab3:
                                             img_url = item.get("image_url", "")
                                             if img_url.startswith("/"):
                                                 img_url = f"{backend_url}{img_url}"
-                                            st.image(img_url, use_container_width=True)
+                                            
+                                            # Use proxy fetch
+                                            img_bytes = get_image_bytes(img_url)
+                                            if img_bytes:
+                                                st.image(img_bytes, use_container_width=True)
+                                            else:
+                                                st.warning("Image unavailable")
                                         with c2:
                                             st.subheader(item["name"])
                                             st.write(f"**Location:** {item['location']}")
