@@ -180,3 +180,60 @@ with tab3:
                     st.error(f"Connection error: {e}")
             else:
                 st.warning("Please enter a search term.")
+
+with tab4:
+    st.header("🏠 3D Room Map")
+    st.info("Upload your room's 3D model (.glb) to visualize the environment. You can use apps like Polycam or LiDAR scanners to generate this.")
+    
+    uploaded_model = st.file_uploader("Upload 3D Model (.glb)", type=["glb"])
+    
+    if uploaded_model:
+        # Encode file to base64 to embed in HTML
+        bytes_data = uploaded_model.getvalue()
+        b64 = base64.b64encode(bytes_data).decode()
+        mime = "model/gltf-binary"
+        
+        html_code = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+            <style>
+                body {{ margin: 0; }}
+                model-viewer {{
+                    width: 100%;
+                    height: 600px;
+                    background-color: #f0f2f6;
+                    --poster-color: #f0f2f6;
+                }}
+            </style>
+        </head>
+        <body>
+            <model-viewer 
+                src="data:{mime};base64,{b64}" 
+                camera-controls 
+                auto-rotate
+                shadow-intensity="1"
+                ar>
+                <div slot="progress-bar"></div>
+            </model-viewer>
+        </body>
+        </html>
+        """
+        components.html(html_code, height=600)
+    else:
+        st.write("No model uploaded yet.")
+        # Optional: Demo placeholder
+        if st.checkbox("Show Demo Model"):
+             # Use a public sample model (Astronaut) from Google's model-viewer examples
+             demo_html = """
+             <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+             <model-viewer 
+                 src="https://modelviewer.dev/shared-assets/models/Astronaut.glb" 
+                 alt="A 3D model of an astronaut"
+                 auto-rotate 
+                 camera-controls
+                 style="width: 100%; height: 500px; background-color: #f0f2f6;">
+             </model-viewer>
+             """
+             components.html(demo_html, height=500)
