@@ -6,7 +6,7 @@ import time
 
 st.set_page_config(page_title="FindIt - Cloud Demo", layout="wide")
 
-st.title("🔍 FindIt - Cloud Version")
+st.title("🔍 FindIt - Cloud Version (v1.2)")
 
 st.info("""
 **Cloud Deployment Notice:**

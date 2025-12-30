@@ -2,8 +2,9 @@ import streamlit as st
 import requests
 from datetime import datetime
 import pandas as pd
-
 import socket
+import streamlit.components.v1 as components
+import base64
 
 # Function to get local IP address
 def get_local_ip():
@@ -22,9 +23,9 @@ def get_local_ip():
 LOCAL_IP = get_local_ip()
 BACKEND_URL = f"http://{LOCAL_IP}:8001"
 
-st.set_page_config(page_title="FindIt - Smart Home Finder", layout="wide")
+st.set_page_config(page_title="FindIt - Local (v1.1)", layout="wide")
 
-st.title("🔍 FindIt - Where is my stuff?")
+st.title(f"🔍 FindIt - Local Version ({LOCAL_IP})")
 
 # Sidebar
 st.sidebar.header("Control Panel")
@@ -39,8 +40,19 @@ try:
 except Exception as e:
     status.error(f"Backend Offline: {e}")
 
+# Helper to fetch images
+def get_image_bytes(url):
+    try:
+        # For local, we can just fetch directly, but using this helper for consistency
+        res = requests.get(url, timeout=10)
+        if res.status_code == 200:
+            return res.content
+        return None
+    except:
+        return None
+
 # Tabs
-tab1, tab2, tab3 = st.tabs(["Search", "Live Feed / History", "Simulator (Upload)"])
+tab1, tab2, tab3, tab4 = st.tabs(["Search", "Live Feed / History", "Simulator (Upload)", "3D Room Map"])
 
 with tab3:
     st.header("📷 Camera Simulator")
@@ -122,7 +134,7 @@ with tab1:
             except Exception as e:
                 st.error(f"Error connecting to backend: {e}")
         else:
-            st.info("Please enter an item name.")
+             st.info("Please enter an item name.")
 
 with tab2:
     st.header("Live Feed")
@@ -176,7 +188,15 @@ with tab2:
                     st.subheader(f"Recent '{item_name}'")
                     # Show top 1
                     item = data["items"][0]
-                    st.image(f"{BACKEND_URL}{item['image_url']}", width=300)
+                    
+                    img_url = f"{BACKEND_URL}{item['image_url']}"
+                    # Use helper
+                    img_bytes = get_image_bytes(img_url)
+                    if img_bytes:
+                        st.image(img_bytes, width=300)
+                    else:
+                        st.warning("Image unavailable")
+                        
                     st.write(f"Location: {item['location']} at {item['time']}")
                     st.markdown("---")
             except:
@@ -184,3 +204,58 @@ with tab2:
         
         if not found_any:
             st.info("No common items detected recently.")
+
+with tab4:
+    st.header("🏠 3D Room Map")
+    st.info("Upload your room's 3D model (.glb) to visualize the environment.")
+    
+    uploaded_model = st.file_uploader("Upload 3D Model (.glb)", type=["glb"])
+    
+    if uploaded_model:
+        # Encode file to base64 to embed in HTML
+        bytes_data = uploaded_model.getvalue()
+        b64 = base64.b64encode(bytes_data).decode()
+        mime = "model/gltf-binary"
+        
+        html_code = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+            <style>
+                body {{ margin: 0; }}
+                model-viewer {{
+                    width: 100%;
+                    height: 600px;
+                    background-color: #f0f2f6;
+                    --poster-color: #f0f2f6;
+                }}
+            </style>
+        </head>
+        <body>
+            <model-viewer 
+                src="data:{mime};base64,{b64}" 
+                camera-controls 
+                auto-rotate
+                shadow-intensity="1"
+                ar>
+                <div slot="progress-bar"></div>
+            </model-viewer>
+        </body>
+        </html>
+        """
+        components.html(html_code, height=600)
+    else:
+        st.write("No model uploaded yet.")
+        if st.checkbox("Show Demo Model"):
+             demo_html = """
+             <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+             <model-viewer 
+                 src="https://modelviewer.dev/shared-assets/models/Astronaut.glb" 
+                 alt="A 3D model of an astronaut"
+                 auto-rotate 
+                 camera-controls
+                 style="width: 100%; height: 500px; background-color: #f0f2f6;">
+             </model-viewer>
+             """
+             components.html(demo_html, height=500)
