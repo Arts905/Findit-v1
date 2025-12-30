@@ -1,0 +1,10 @@
+streamlit
+fastapi
+uvicorn
+python-multipart
+ultralytics
+pillow
+sqlalchemy
+requests
+pandas
+opencv-python-headless

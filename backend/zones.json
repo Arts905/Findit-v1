@@ -1,0 +1,37 @@
+{
+    "sofa_area": {
+        "x_min": 0.0,
+        "y_min": 0.3,
+        "x_max": 0.4,
+        "y_max": 0.8,
+        "description": "沙发区"
+    },
+    "coffee_table": {
+        "x_min": 0.4,
+        "y_min": 0.4,
+        "x_max": 0.6,
+        "y_max": 0.8,
+        "description": "茶几上"
+    },
+    "tv_cabinet": {
+        "x_min": 0.6,
+        "y_min": 0.3,
+        "x_max": 1.0,
+        "y_max": 0.6,
+        "description": "电视柜"
+    },
+    "floor": {
+        "x_min": 0.0,
+        "y_min": 0.8,
+        "x_max": 1.0,
+        "y_max": 1.0,
+        "description": "地板上"
+    },
+    "entrance": {
+        "x_min": 0.0,
+        "y_min": 0.0,
+        "x_max": 0.3,
+        "y_max": 0.3,
+        "description": "玄关/门口"
+    }
+}

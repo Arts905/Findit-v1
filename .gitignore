@@ -1,0 +1,25 @@
+# Virtual Environment
+.venv
+__pycache__
+*.pyc
+
+# IDE
+.vscode
+.idea
+
+# Secrets
+secrets.h
+*.env
+
+# Large Files & Models
+*.pt
+yolov8*.pt
+backend/*.pt
+
+# User Data
+images/
+*.db
+findit.db
+
+# Logs
+*.log
