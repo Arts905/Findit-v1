@@ -34,7 +34,7 @@ else:
     status.warning("Please enter a backend URL")
 
 # Tabs
-tab1, tab2 = st.tabs(["Upload & Analyze", "Live Feed (Demo)"])
+tab1, tab2, tab3 = st.tabs(["Upload & Analyze", "Live Feed (Demo)", "Find My Stuff"])
 
 with tab1:
     st.header("📷 Upload Image")
@@ -47,6 +47,9 @@ with tab1:
             if not backend_url:
                 st.error("Please configure a Backend URL in the sidebar first.")
             else:
+                # Normalize backend URL
+                backend_url = backend_url.rstrip('/')
+                
                 progress_bar = st.progress(0)
                 status_text = st.empty()
                 status_text.text("Preparing upload...")
@@ -79,6 +82,8 @@ with tab1:
                                 if img_url.startswith("/"):
                                     img_url = f"{backend_url}{img_url}"
                                 st.image(img_url, caption="AI Result", use_container_width=True)
+                            else:
+                                st.warning("No annotated image returned.")
                     else:
                         st.error(f"Error: {res.status_code}")
                 except Exception as e:
@@ -90,6 +95,9 @@ with tab2:
         st.warning("Live feed requires a public backend URL tunnelling to your local ESP32.")
         st.image("https://placehold.co/640x480?text=No+Signal", caption="Placeholder Signal")
     else:
+        # Normalize backend URL
+        backend_url = backend_url.rstrip('/')
+        
         # User needs to manually input ESP32 public URL if they exposed it, or use backend proxy
         st.write("To view the live feed, your backend must be able to reach the ESP32 IP.")
         camera_ip = st.text_input("ESP32 Local IP (if backend is on same network)", "192.168.31.57")
@@ -97,3 +105,47 @@ with tab2:
         if st.button("Start Stream"):
             proxy_url = f"{backend_url}/proxy_stream?url=http://{camera_ip}:81/stream&ai=true"
             st.image(proxy_url, use_container_width=True)
+
+with tab3:
+    st.header("🔍 Find My Stuff")
+    st.write("Search for items you've previously uploaded/detected.")
+    
+    if not backend_url:
+        st.error("Please configure a Backend URL in the sidebar first.")
+    else:
+        backend_url = backend_url.rstrip('/')
+        query = st.text_input("What are you looking for? (e.g., keys, wallet)", "")
+        
+        if st.button("Search") or query:
+            if query:
+                try:
+                    with st.spinner("Searching..."):
+                        res = requests.get(f"{backend_url}/query", params={"q": query}, timeout=10)
+                        
+                        if res.status_code == 200:
+                            results = res.json()
+                            if "items" in results and results["items"]:
+                                st.success(f"Found {len(results['items'])} items matching '{query}'")
+                                
+                                for item in results["items"]:
+                                    with st.container():
+                                        c1, c2 = st.columns([1, 2])
+                                        with c1:
+                                            # Construct full image URL
+                                            img_url = item.get("image_url", "")
+                                            if img_url.startswith("/"):
+                                                img_url = f"{backend_url}{img_url}"
+                                            st.image(img_url, use_container_width=True)
+                                        with c2:
+                                            st.subheader(item["name"])
+                                            st.write(f"**Location:** {item['location']}")
+                                            st.write(f"**Time:** {item['time']}")
+                                        st.divider()
+                            else:
+                                st.info(f"No items found matching '{query}'.")
+                        else:
+                            st.error(f"Search failed: {res.status_code}")
+                except Exception as e:
+                    st.error(f"Connection error: {e}")
+            else:
+                st.warning("Please enter a search term.")
